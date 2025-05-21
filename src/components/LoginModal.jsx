@@ -1,100 +1,105 @@
+// src/components/LoginModal.jsx
 import React, { useState } from 'react';
-import { X, LogIn } from 'lucide-react';
-import { authenticate } from '../services/authService';
 
-const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
+function LoginModal() {
   const [password, setPassword] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e) => {
+  
+  const handleLogin = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    // Pequeno atraso para simular verificação
-    setTimeout(() => {
-      const isAuthenticated = authenticate(password);
-      
-      if (isAuthenticated) {
-        setPassword('');
-        onLoginSuccess();
-      } else {
-        setError('Senha incorreta. Tente novamente.');
-      }
-      
-      setIsLoading(false);
-    }, 500);
+    if (password === 'sindmpu2025') {  // Substitua pela sua senha
+      localStorage.setItem('isAdmin', 'true');
+      localStorage.setItem('adminExpiry', Date.now() + (4 * 60 * 60 * 1000)); // 4 horas
+      setIsAdmin(true);
+      setShowModal(false);
+      window.location.reload(); // Força um reload para atualizar o estado
+    } else {
+      setError('Senha incorreta');
+    }
   };
-
+  
+  const handleLogout = () => {
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminExpiry');
+    setIsAdmin(false);
+    window.location.reload(); // Força um reload para atualizar o estado
+  };
+  
+  // Verificar autenticação ao carregar
+  React.useEffect(() => {
+    const storedIsAdmin = localStorage.getItem('isAdmin');
+    const adminExpiry = localStorage.getItem('adminExpiry');
+    
+    if (storedIsAdmin && adminExpiry && parseInt(adminExpiry) > Date.now()) {
+      setIsAdmin(true);
+    } else {
+      // Limpar se expirado
+      localStorage.removeItem('isAdmin');
+      localStorage.removeItem('adminExpiry');
+    }
+  }, []);
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-blue-900">Acesso Administrativo</h3>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <p className="mb-4 text-sm text-gray-600">
-          Esta área é restrita a administradores. Digite a senha para acessar as funcionalidades de edição.
-        </p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1" htmlFor="password">
-              Senha de Administrador
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Digite a senha"
-              required
-            />
-            {error && (
-              <p className="mt-1 text-sm text-red-600">{error}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="mr-2 px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 flex items-center"
-            >
-              {isLoading ? (
-                <>
-                  <span className="mr-2">Verificando...</span>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </>
-              ) : (
-                <>
-                  <LogIn size={16} className="mr-2" />
+    <div>
+      {/* Botão de login/logout */}
+      {isAdmin ? (
+        <button 
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Logout Admin
+        </button>
+      ) : (
+        <button 
+          onClick={() => setShowModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Login Admin
+        </button>
+      )}
+      
+      {/* Modal de login */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-w-full">
+            <h2 className="text-xl font-bold mb-4">Login Administrador</h2>
+            
+            <form onSubmit={handleLogin}>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Senha</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Digite a senha de administrador"
+                />
+                {error && <p className="text-red-500 mt-1">{error}</p>}
+              </div>
+              
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
                   Entrar
-                </>
-              )}
-            </button>
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default LoginModal;
