@@ -1,0 +1,101 @@
+/* Importação do Tailwind CSS */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Fontes personalizadas */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Variáveis de cores do SindMPU */
+:root {
+  --sindmpu-blue-dark: #19325E;
+  --sindmpu-blue-medium: #5B7AA7;
+  --sindmpu-blue-light: #B9C6D9;
+  --sindmpu-neutral: #F5F1EE;
+  --sindmpu-red: #FF4444;
+}
+
+/* Estilos globais */
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f3f4f6;
+  color: #333;
+}
+
+/* Personalização de componentes */
+.btn-primary {
+  @apply bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800 transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition-colors;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow p-4;
+}
+
+/* Animações */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Estilização dos gráficos do Recharts */
+.recharts-wrapper .recharts-cartesian-grid-horizontal line,
+.recharts-wrapper .recharts-cartesian-grid-vertical line {
+  stroke: #e5e7eb;
+}
+
+.recharts-wrapper .recharts-cartesian-axis-line {
+  stroke: #d1d5db;
+}
+
+.recharts-tooltip-wrapper {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 8px !important;
+}
+
+/* Personalização do mapa */
+.map-container {
+  position: relative;
+  min-height: 400px;
+}
+
+.state-button {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.state-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.state-button.selected {
+  box-shadow: 0 0 0 3px #FCD34D;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
