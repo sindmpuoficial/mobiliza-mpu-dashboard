@@ -9,6 +9,14 @@ const DetailPanel = ({
   setEditMode,
   isEditModeEnabled
 }) => {
+  // Função para lidar com o clique no botão de editar
+  const handleEditClick = () => {
+    console.log("Botão Editar Dados clicado"); // Log para debug
+    if (isEditModeEnabled) {
+      setEditMode();
+    }
+  };
+
   if (!selectedState && !selectedCity) return (
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="text-xl font-semibold mb-4">Adesão Nacional</h2>
@@ -55,7 +63,7 @@ const DetailPanel = ({
           <div className="mt-8">
             {isEditModeEnabled ? (
               <button
-                onClick={() => setEditMode(true)}
+                onClick={handleEditClick}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 <Edit size={16} className="inline mr-2" />
@@ -104,7 +112,7 @@ const DetailPanel = ({
           <div className="mt-8">
             {isEditModeEnabled ? (
               <button
-                onClick={() => setEditMode(true)}
+                onClick={handleEditClick}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 <Edit size={16} className="inline mr-2" />

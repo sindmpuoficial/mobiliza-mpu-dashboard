@@ -1,18 +1,20 @@
-// Cores do SindMPU
+// src/data/constants.js (Nova versão com cores mais vivas)
+
+// Cores do SindMPU (versão mais viva)
 export const COLORS = {
-    NONE: '#FF4444',          // Vermelho para não aderentes
-    LOW: '#F5DCD5',           // Variação de #F5F1EE tendendo ao vermelho
-    MEDIUM_LOW: '#F5E8E2',    // Variação clara
-    MEDIUM: '#F5F1EE',        // Base clara
-    MEDIUM_HIGH: '#B9C6D9',   // Mistura com o azul
-    HIGH: '#5B7AA7',          // Azul intermediário
-    FULL: '#19325E',          // Azul SindMPU para adesão completa
+    NONE: '#FF3333',          // Vermelho mais intenso para não aderentes
+    LOW: '#FF9999',           // Vermelho claro mais vibrante
+    MEDIUM_LOW: '#FFC2A3',    // Laranja/salmon claro
+    MEDIUM: '#FFE0B2',        // Amarelo claro (neutro mais quente)
+    MEDIUM_HIGH: '#A7C5F2',   // Azul claro mais vibrante
+    HIGH: '#4285F4',          // Azul médio mais vibrante
+    FULL: '#0D47A1',          // Azul SindMPU mais intenso
   };
   
-  // Cores para o gráfico de pizza
-  export const PIE_COLORS = ['#19325E', '#5B7AA7', '#B9C6D9', '#8884D8', '#4C6EF5', '#748CAB'];
+  // Cores para o gráfico de pizza (mais vibrantes)
+  export const PIE_COLORS = ['#0D47A1', '#4285F4', '#64B5F6', '#8E24AA', '#1E88E5', '#3949AB'];
   
-  // Definição das regiões e estados
+  // Definição das regiões e estados (manter o original)
   export const regions = {
     norte: {
       name: 'Norte',
@@ -36,12 +38,12 @@ export const COLORS = {
     }
   };
   
-  // Lista de órgãos do MPU
+  // Lista de órgãos do MPU (manter o original)
   export const mpuOrgans = [
     "MPF", "MPT", "MPM", "MPDFT", "CNMP", "ESMPU"
   ];
   
-  // Função para calcular a cor baseada na porcentagem de adesão
+  // A função de cálculo de cor permanece a mesma
   export const getColorByPercentage = (percentage) => {
     if (percentage === 0) return COLORS.NONE;
     if (percentage < 25) return COLORS.LOW;

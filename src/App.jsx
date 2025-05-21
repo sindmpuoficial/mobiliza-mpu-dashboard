@@ -23,6 +23,7 @@ import {
   saveData, 
   resetToInitialData 
 } from './services/dataService';
+import { isAuthenticated } from './services/authService';
 
 // Hooks
 import useDataExport from './hooks/useDataExport';
@@ -38,15 +39,8 @@ const App = () => {
   const [selectedState, setSelectedState] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
   const [viewMode, setViewMode] = useState('map'); // 'map', 'cities', 'stats'
-  const [editMode, setEditMode] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [detailFilter, setDetailFilter] = useState('all'); // 'all', 'mpf', 'mpt', etc.
-  
-  // Estado de edição
-  const [editData, setEditData] = useState({
-    stateValue: 0,
-    cityValue: 0,
-    notes: ''
-  });
   
   // Estados relacionados à autenticação e edição
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
@@ -64,6 +58,31 @@ const App = () => {
     exportCitiesData, 
     exportFullReport 
   } = useDataExport(statesData, mpuData, citiesData);
+  
+  // Verificar autenticação ao iniciar
+  useEffect(() => {
+    const checkAuth = () => {
+      const authStatus = isAuthenticated();
+      if (!authStatus) {
+        setIsEditModeEnabled(false);
+      }
+      
+      // Armazenar para o EditModal usar
+      localStorage.setItem('isAdmin', authStatus ? 'true' : 'false');
+      localStorage.setItem('adminExpiry', authStatus ? (Date.now() + 4 * 60 * 60 * 1000).toString() : '0');
+      localStorage.setItem('isEditMode', isEditModeEnabled ? 'true' : 'false');
+    };
+    
+    checkAuth();
+    // Verificar a cada minuto
+    const interval = setInterval(checkAuth, 60000);
+    return () => clearInterval(interval);
+  }, [isEditModeEnabled]);
+  
+  // Atualizar localStorage quando o modo de edição mudar
+  useEffect(() => {
+    localStorage.setItem('isEditMode', isEditModeEnabled ? 'true' : 'false');
+  }, [isEditModeEnabled]);
   
   // Carregar dados ao iniciar
   useEffect(() => {
@@ -111,67 +130,79 @@ const App = () => {
   const handleStateClick = (state) => {
     setSelectedState(state);
     setSelectedCity(null);
-    
-    if (editMode) {
-      setEditData({
-        ...editData,
-        stateValue: state.value
-      });
-    }
   };
 
   const handleCityClick = (city) => {
     setSelectedCity(city);
-    
-    if (editMode) {
-      setEditData({
-        ...editData,
-        cityValue: city.value
-      });
+  };
+
+  // Função para abrir modal de edição
+  const openEditModal = () => {
+    console.log("Abrindo modal de edição");
+    if (!isEditModeEnabled) {
+      alert('Você precisa estar logado como administrador e com o modo de edição ativado.');
+      return;
     }
+    setIsEditModalOpen(true);
   };
 
-  const handleEditChange = (field, value) => {
-    setEditData({
-      ...editData,
-      [field]: field.includes('Value') ? Math.min(100, Math.max(0, parseInt(value) || 0)) : value
-    });
+  // Função para fechar modal de edição
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
   };
 
-  const handleSaveEdit = () => {
-    // Atualizar estado selecionado
-    if (selectedState) {
+  // Função para salvar dados editados
+  const handleSaveEdit = (updatedData) => {
+    // Verificar se o usuário tem permissão para editar
+    if (!isEditModeEnabled) {
+      alert('Você precisa estar logado como administrador para editar dados.');
+      return;
+    }
+    
+    if (selectedState && !selectedCity) {
+      // Atualizar estado
       const updatedStatesData = statesData.map(state => 
         state.id === selectedState.id 
-          ? {...state, value: editData.stateValue}
+          ? {...state, value: updatedData.value}
           : state
       );
       setStatesData(updatedStatesData);
-      setSelectedState({...selectedState, value: editData.stateValue});
+      setSelectedState({...selectedState, value: updatedData.value});
       
       // Salvar no localStorage
       saveData('STATES_DATA', updatedStatesData);
-    }
-    
-    // Atualizar cidade selecionada
-    if (selectedCity) {
+    } else if (selectedCity) {
+      // Atualizar cidade
       const updatedCitiesData = citiesData.map(city => 
         city.id === selectedCity.id 
-          ? {...city, value: editData.cityValue}
+          ? {...city, 
+             value: updatedData.value,
+             adheringServers: updatedData.adheringServers,
+             totalServers: updatedData.totalServers
+            }
           : city
       );
       setCitiesData(updatedCitiesData);
-      setSelectedCity({...selectedCity, value: editData.cityValue});
+      setSelectedCity({
+        ...selectedCity, 
+        value: updatedData.value,
+        adheringServers: updatedData.adheringServers,
+        totalServers: updatedData.totalServers
+      });
       
       // Salvar no localStorage
       saveData('CITIES_DATA', updatedCitiesData);
     }
-    
-    setEditMode(false);
   };
   
   // Resetar para valores iniciais
   const handleResetData = () => {
+    // Verificar se o usuário tem permissão para resetar dados
+    if (!isEditModeEnabled) {
+      alert('Você precisa estar logado como administrador para resetar dados.');
+      return;
+    }
+
     const { statesData: initialStates, mpuData: initialMpu, citiesData: initialCities } = resetToInitialData();
     
     setStatesData(initialStates);
@@ -185,6 +216,22 @@ const App = () => {
     // Limpar seleções
     setSelectedState(null);
     setSelectedCity(null);
+  };
+
+  // Preparar dados para o modal de edição
+  const getEditData = () => {
+    if (selectedState && !selectedCity) {
+      return {
+        ...selectedState,
+        name: selectedState.state
+      };
+    } else if (selectedCity) {
+      return {
+        ...selectedCity,
+        name: selectedCity.city
+      };
+    }
+    return null;
   };
 
   // Renderização do componente principal
@@ -214,24 +261,27 @@ const App = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setViewMode('map')}
-                  className={`p-2 rounded-md ${viewMode === 'map' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 rounded-md flex items-center ${viewMode === 'map' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                   title="Mapa"
                 >
-                  <Map size={20} />
+                  <Map size={20} className="mr-1" />
+                  <span className="hidden sm:inline">Mapa</span>
                 </button>
                 <button
                   onClick={() => setViewMode('cities')}
-                  className={`p-2 rounded-md ${viewMode === 'cities' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 rounded-md flex items-center ${viewMode === 'cities' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                   title="Unidades"
                 >
-                  <Info size={20} />
+                  <Info size={20} className="mr-1" />
+                  <span className="hidden sm:inline">Unidades</span>
                 </button>
                 <button
                   onClick={() => setViewMode('stats')}
-                  className={`p-2 rounded-md ${viewMode === 'stats' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 rounded-md flex items-center ${viewMode === 'stats' ? 'bg-blue-800 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                   title="Estatísticas"
                 >
-                  <BarChart2 size={20} />
+                  <BarChart2 size={20} className="mr-1" />
+                  <span className="hidden sm:inline">Estatísticas</span>
                 </button>
               </div>
             </div>
@@ -277,7 +327,7 @@ const App = () => {
                   selectedState={selectedState}
                   selectedCity={selectedCity}
                   nationalAverage={nationalAverage}
-                  setEditMode={setEditMode}
+                  setEditMode={openEditModal}
                   isEditModeEnabled={isEditModeEnabled}
                 />
                 
@@ -310,17 +360,14 @@ const App = () => {
         </div>
       </footer>
       
-      {editMode && 
-        <EditModal 
-          editMode={editMode}
-          setEditMode={setEditMode}
-          selectedState={selectedState}
-          selectedCity={selectedCity}
-          editData={editData}
-          handleEditChange={handleEditChange}
-          handleSaveEdit={handleSaveEdit}
-        />
-      }
+      {/* Modal de Edição - agora usando a estrutura correta do seu EditModal */}
+      <EditModal 
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
+        data={getEditData()}
+        onSave={handleSaveEdit}
+        type={selectedCity ? 'city' : 'state'}
+      />
     </div>
   );
 };

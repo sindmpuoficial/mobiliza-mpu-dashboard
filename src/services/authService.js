@@ -1,60 +1,54 @@
-// Serviço básico de autenticação
-// NOTA: Este é um sistema simples. Para produção, use um sistema de autenticação mais robusto
+// src/services/authService.js
 
-// Senha fixa para admin - ALTERE PARA UMA SENHA FORTE EM PRODUÇÃO
-const ADMIN_PASSWORD = "sindmpu2025"; // Você deve alterar esta senha!
+// Constantes
+const ADMIN_KEY = 'mobiliza-mpu-admin';
+const ADMIN_PASSWORD = 'sindmpu2025'; // Alterar para uma senha forte em produção
+const TOKEN_EXPIRY = 4 * 60 * 60 * 1000; // 4 horas em milissegundos
 
-// Chave para armazenar o token de autenticação
-const AUTH_TOKEN_KEY = "mobilizaMPU_authToken";
-
-// Tempo de expiração do token em milissegundos (4 horas)
-const TOKEN_EXPIRATION = 4 * 60 * 60 * 1000;
-
-// Função para verificar se a senha está correta
+/**
+ * Verifica a senha de administrador
+ * @param {string} password - Senha fornecida
+ * @returns {boolean} - Verdadeiro se a senha estiver correta
+ */
 export const authenticate = (password) => {
   if (password === ADMIN_PASSWORD) {
-    // Gerar token simples com data de expiração
     const token = {
-      value: generateRandomToken(),
-      expires: new Date().getTime() + TOKEN_EXPIRATION
+      expiry: Date.now() + TOKEN_EXPIRY,
+      authenticated: true
     };
-    
-    // Salvar token no localStorage
-    localStorage.setItem(AUTH_TOKEN_KEY, JSON.stringify(token));
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(token));
     return true;
   }
   return false;
 };
 
-// Verifica se o usuário está autenticado
+/**
+ * Verifica se o usuário está autenticado
+ * @returns {boolean} - Verdadeiro se autenticado e o token não tiver expirado
+ */
 export const isAuthenticated = () => {
   try {
-    const tokenStr = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!tokenStr) return false;
+    const tokenString = localStorage.getItem(ADMIN_KEY);
+    if (!tokenString) return false;
     
-    const token = JSON.parse(tokenStr);
-    const now = new Date().getTime();
+    const token = JSON.parse(tokenString);
+    const isValid = token.authenticated && token.expiry > Date.now();
     
-    // Verificar se o token expirou
-    if (now > token.expires) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      return false;
+    // Limpar token expirado
+    if (!isValid && tokenString) {
+      localStorage.removeItem(ADMIN_KEY);
     }
     
-    return true;
+    return isValid;
   } catch (error) {
     console.error("Erro ao verificar autenticação:", error);
     return false;
   }
 };
 
-// Fazer logout (remover token)
+/**
+ * Realiza o logout
+ */
 export const logout = () => {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-};
-
-// Função auxiliar para gerar tokens aleatórios
-const generateRandomToken = () => {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
+  localStorage.removeItem(ADMIN_KEY);
 };

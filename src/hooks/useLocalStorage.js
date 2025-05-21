@@ -1,48 +1,61 @@
+// hooks/useLocalStorage.js
 import { useState, useEffect } from 'react';
 
-// Hook personalizado para gerenciar estado com localStorage
-function useLocalStorage(key, initialValue) {
-  // Estado para armazenar o valor
-  const [storedValue, setStoredValue] = useState(() => {
+/**
+ * Hook para gerenciar estado com persistência no localStorage
+ * @param {string} key - Chave para armazenamento no localStorage
+ * @param {any} initialValue - Valor inicial caso não exista nada no localStorage
+ * @returns {[any, Function]} - Valor atual e função para atualizar o valor
+ */
+const useLocalStorage = (key, initialValue) => {
+  // Função que obtém o valor inicial
+  const getValue = () => {
     try {
-      // Obter valor do localStorage ou retornar initialValue
-      const item = window.localStorage.getItem(key);
+      const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Erro ao carregar ${key} do localStorage:`, error);
+      console.error(`Erro ao recuperar ${key} do localStorage:`, error);
       return initialValue;
     }
-  });
+  };
 
-  // Função para atualizar o valor no estado e localStorage
+  // Estado para armazenar o valor atual
+  const [storedValue, setStoredValue] = useState(getValue);
+
+  // Função para atualizar o valor no state e no localStorage
   const setValue = (value) => {
     try {
-      // Permitir que o valor seja uma função para seguir o mesmo padrão do useState
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
+      // Permitir que o valor seja uma função (como no setState)
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
       
-      // Salvar estado
+      // Salvar no state
       setStoredValue(valueToStore);
       
       // Salvar no localStorage
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       console.error(`Erro ao salvar ${key} no localStorage:`, error);
     }
   };
 
-  // Efeito para sincronizar o valor com o localStorage se o key mudar
+  // Efeito para sincronizar com alterações no localStorage
   useEffect(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      setStoredValue(item ? JSON.parse(item) : initialValue);
-    } catch (error) {
-      console.error(`Erro ao sincronizar ${key} com localStorage:`, error);
-      setStoredValue(initialValue);
-    }
-  }, [key, initialValue]);
+    const handleStorageChange = (e) => {
+      if (e.key === key) {
+        setStoredValue(JSON.parse(e.newValue));
+      }
+    };
+    
+    // Adicionar listener para mudanças no localStorage
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key]);
 
   return [storedValue, setValue];
-}
+};
 
 export default useLocalStorage;
